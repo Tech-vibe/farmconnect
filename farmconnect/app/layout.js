@@ -1,4 +1,6 @@
 import './globals.css';
+import AnimatedBlob from './components/AnimatedBlob';
+import { RoleProvider } from './components/RoleContext';
 
 export const metadata = {
   title: 'FarmConnect — Helping Farmers Access the Right Resources',
@@ -19,7 +21,12 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <RoleProvider>
+          <AnimatedBlob />
+          {children}
+        </RoleProvider>
+      </body>
     </html>
   );
 }

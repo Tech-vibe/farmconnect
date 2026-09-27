@@ -152,31 +152,81 @@ function WorkerCard({ item, index }) {
 function DiscoverContent() {
   const searchParams = useSearchParams();
   const initialType = searchParams.get('type') === 'workers' ? 'workers' : 'equipment';
+  const initialQ = searchParams.get('q') || '';
 
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(initialQ ? 2 : 1);
   const [category, setCategory] = useState(initialType);
   const [location, setLocation] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [filterType, setFilterType] = useState('All');
 
   useEffect(() => { setCategory(initialType); }, [initialType]);
+  
+  // Reset filter when category changes unless we just loaded from a query
+  useEffect(() => { if (!initialQ) setFilterType('All'); }, [category]);
 
-  const handleSearch = () => {
+  // Process the global search query if it exists
+  useEffect(() => {
+    if (initialQ) {
+      const qLower = initialQ.toLowerCase();
+      
+      // Try to find a city in the text
+      const foundCity = CITIES.find(c => qLower.includes(c.toLowerCase()));
+      if (foundCity) setLocation(foundCity);
+      else setLocation(initialQ); // Fallback to raw string
+
+      // Try to find an equipment type or skill
+      const types = category === 'equipment' ? EQUIP_TYPES : WORKER_SKILLS;
+      const foundType = types.find(t => t !== 'All' && qLower.includes(t.toLowerCase()));
+      if (foundType) setFilterType(foundType);
+    }
+  }, [initialQ, category]);
+
+  const handleSearch = async () => {
     if (!location.trim()) return;
     setLoading(true);
     setStep(3);
-    setTimeout(() => {
+    
+    try {
+      const endpoint = category === 'equipment' ? 'equipment' : 'workers';
+      let url = `http://127.0.0.1:8000/api/${endpoint}?location=${encodeURIComponent(location)}`;
+      
+      if (filterType !== 'All') {
+        url += category === 'equipment' ? `&type=${encodeURIComponent(filterType)}` : `&skill=${encodeURIComponent(filterType)}`;
+      }
+
+      const response = await fetch(url);
+      
+      if (!response.ok) throw new Error('Failed to fetch from backend');
+      
+      const data = await response.json();
+      
+      // Map backend fields to frontend expectations (e.g. image_url -> images array, add dummy ratings)
+      const mapped = data.map(item => ({
+        ...item,
+        rating: item.rating || (4.0 + Math.random()).toFixed(1),
+        distance: item.distance || (Math.random() * 15 + 1).toFixed(1) + ' km',
+        images: item.image_url ? [{ url: item.image_url }] : []
+      }));
+      
+      setResults(mapped);
+    } catch (err) {
+      console.error('Backend search failed:', err);
+      // Fallback to mock data if backend isn't running or empty
       const pool = category === 'equipment' ? MOCK_EQUIPMENT : MOCK_WORKERS;
       const filtered = pool.filter(i =>
-        i.location.toLowerCase().includes(location.toLowerCase()) ||
-        location.toLowerCase().includes(i.location.toLowerCase())
+        (i.location.toLowerCase().includes(location.toLowerCase()) ||
+         location.toLowerCase().includes(i.location.toLowerCase())) &&
+        (filterType === 'All' || (category === 'equipment' ? i.type.includes(filterType) : i.skill.includes(filterType)))
       );
       setResults(filtered.length ? filtered : pool);
+    } finally {
       setLoading(false);
-    }, 900);
+    }
   };
 
-  const reset = () => { setStep(1); setLocation(''); setResults([]); };
+  const reset = () => { setStep(1); setLocation(''); setFilterType('All'); setResults([]); };
 
   return (
     <>
@@ -215,30 +265,32 @@ function DiscoverContent() {
             <div className="anim-scale">
               <button
                 id="category-equipment"
-                className="cat-btn"
+                className="cta-wide"
+                style={{ width: '100%', marginBottom: '10px', border: 'none', fontFamily: 'inherit', textAlign: 'left' }}
                 onClick={() => { setCategory('equipment'); setStep(2); }}
               >
-                <div className="cat-btn-icon cat-btn-icon-green">
+                <div className="cta-wide-icon">
                   <Icons.Tractor />
                 </div>
-                <div>
-                  <div className="cat-btn-title">Farm Equipment</div>
-                  <div className="cat-btn-desc">Tractors, harvesters, tillers, pumps</div>
+                <div style={{ flex: 1 }}>
+                  <div className="cta-wide-title">Farm Equipment</div>
+                  <div className="cta-wide-desc">Tractors, harvesters, tillers, pumps</div>
                 </div>
                 <Icons.ChevronRight />
               </button>
 
               <button
                 id="category-workers"
-                className="cat-btn"
+                className="cta-wide"
+                style={{ width: '100%', marginBottom: '10px', border: 'none', fontFamily: 'inherit', textAlign: 'left' }}
                 onClick={() => { setCategory('workers'); setStep(2); }}
               >
-                <div className="cat-btn-icon cat-btn-icon-amber">
+                <div className="cta-wide-icon">
                   <Icons.Worker />
                 </div>
-                <div>
-                  <div className="cat-btn-title">Skilled Workers</div>
-                  <div className="cat-btn-desc">Harvesters, planters, irrigators</div>
+                <div style={{ flex: 1 }}>
+                  <div className="cta-wide-title">Skilled Workers</div>
+                  <div className="cta-wide-desc">Harvesters, planters, irrigators</div>
                 </div>
                 <Icons.ChevronRight />
               </button>
@@ -282,6 +334,23 @@ function DiscoverContent() {
                     {CITIES.map(city => (
                       <button key={city} className={`city-chip${location === city ? ' selected' : ''}`} onClick={() => setLocation(city)}>
                         {city}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-faint)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+                    {category === 'equipment' ? 'Equipment Type' : 'Worker Skill'}
+                  </div>
+                  <div className="pill-grid">
+                    {(category === 'equipment' ? EQUIP_TYPES : WORKER_SKILLS).map(s => (
+                      <button 
+                        key={s} 
+                        className={`pill-btn${filterType === s ? ' active' : ''}`} 
+                        onClick={() => setFilterType(s)}
+                      >
+                        {s}
                       </button>
                     ))}
                   </div>

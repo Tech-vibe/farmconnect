@@ -3,6 +3,8 @@ import { useState } from 'react';
 import Navbar from '../../components/Navbar';
 import BottomNav from '../../components/BottomNav';
 import { Icons } from '../../components/Icons';
+import CustomSelect from '../../components/CustomSelect';
+import CustomDatePicker from '../../components/CustomDatePicker';
 
 const SKILLS = ['Harvesting', 'Planting & Sowing', 'Weeding', 'Pesticide Spraying', 'Irrigation & Watering', 'Ploughing', 'Threshing', 'Pruning', 'Organic Farming', 'Other'];
 const STATES = ['Kerala', 'Tamil Nadu', 'Karnataka', 'Andhra Pradesh', 'Telangana', 'Maharashtra', 'Punjab', 'Haryana', 'Uttar Pradesh', 'Bihar', 'Other'];
@@ -32,10 +34,31 @@ export default function ListWorkerPage() {
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setLoading(true);
-    // TODO: replace with real API →  POST /api/workers
-    await new Promise(r => setTimeout(r, 1100));
-    setLoading(false);
-    setSubmitted(true);
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/workers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          skill: form.skill,
+          experience: form.experience || 'Not specified',
+          daily_wage: parseFloat(form.daily_wage),
+          location: form.location,
+          contact: form.contact,
+          image_url: null,
+          available_from: form.available_from,
+          available_to: form.available_to
+        })
+      });
+      if (!response.ok) throw new Error('Failed to save to database');
+      setSubmitted(true);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to connect to the backend database.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -113,14 +136,13 @@ export default function ListWorkerPage() {
 
               <div className="form-group">
                 <label className="form-label" htmlFor="worker-experience">Experience</label>
-                <select id="worker-experience" className="form-select" value={form.experience} onChange={e => set('experience', e.target.value)}>
-                  <option value="">Select experience...</option>
-                  <option>Less than 1 year</option>
-                  <option>1–3 years</option>
-                  <option>3–5 years</option>
-                  <option>5–10 years</option>
-                  <option>10+ years</option>
-                </select>
+                <CustomSelect 
+                  id="worker-experience"
+                  options={['Less than 1 year', '1–3 years', '3–5 years', '5–10 years', '10+ years']} 
+                  value={form.experience} 
+                  onChange={val => set('experience', val)} 
+                  placeholder="Select experience..."
+                />
               </div>
             </div>
 
@@ -142,10 +164,13 @@ export default function ListWorkerPage() {
 
               <div className="form-group">
                 <label className="form-label" htmlFor="worker-state">State</label>
-                <select id="worker-state" className="form-select" value={form.state} onChange={e => set('state', e.target.value)}>
-                  <option value="">Select state...</option>
-                  {STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <CustomSelect 
+                  id="worker-state"
+                  options={STATES} 
+                  value={form.state} 
+                  onChange={val => set('state', val)} 
+                  placeholder="Select state..."
+                />
               </div>
             </div>
 
@@ -164,12 +189,21 @@ export default function ListWorkerPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                   <div>
                     <div style={{ fontSize: '0.68rem', color: 'var(--text-faint)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '5px' }}>From</div>
-                    <input id="worker-available-from" className="form-input" type="date" value={form.available_from} onChange={e => set('available_from', e.target.value)} />
+                    <CustomDatePicker 
+                      value={form.available_from} 
+                      onChange={val => set('available_from', val)} 
+                      placeholder="Start date" 
+                    />
                     {errors.available_from && <div className="form-error">{errors.available_from}</div>}
                   </div>
                   <div>
                     <div style={{ fontSize: '0.68rem', color: 'var(--text-faint)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '5px' }}>To</div>
-                    <input id="worker-available-to" className="form-input" type="date" value={form.available_to} onChange={e => set('available_to', e.target.value)} min={form.available_from} />
+                    <CustomDatePicker 
+                      value={form.available_to} 
+                      onChange={val => set('available_to', val)} 
+                      min={form.available_from}
+                      placeholder="End date" 
+                    />
                     {errors.available_to && <div className="form-error">{errors.available_to}</div>}
                   </div>
                 </div>

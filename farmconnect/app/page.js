@@ -3,8 +3,56 @@ import Link from 'next/link';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import { Icons } from './components/Icons';
+import { useRole } from './components/RoleContext';
 
 export default function Home() {
+  const { role, login } = useRole();
+
+  if (!role) {
+    return (
+      <main className="page-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px' }}>
+        <div className="form-section anim-scale" style={{ width: '100%', maxWidth: '400px', margin: '0' }}>
+          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+            <h1 className="hero-title" style={{ fontSize: '1.8rem', marginBottom: '8px' }}>FarmConnect</h1>
+            <p className="hero-subtitle" style={{ margin: 0, fontSize: '0.9rem' }}>Select your role to enter</p>
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <button onClick={() => login('farmer')} className="btn" style={{ padding: '16px', borderRadius: 'var(--r-lg)', justifyContent: 'flex-start', background: 'var(--bg-subtle)', border: '1px solid var(--border)', textAlign: 'left', width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 'var(--r-md)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--green-500)' }}><Icons.Leaf /></div>
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Farmer</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>Looking for equipment or workers</div>
+                </div>
+              </div>
+            </button>
+            
+            <button onClick={() => login('vendor')} className="btn" style={{ padding: '16px', borderRadius: 'var(--r-lg)', justifyContent: 'flex-start', background: 'var(--bg-subtle)', border: '1px solid var(--border)', textAlign: 'left', width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 'var(--r-md)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--green-500)' }}><Icons.Tractor /></div>
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Equipment Vendor</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>I want to rent out my machines</div>
+                </div>
+              </div>
+            </button>
+
+            <button onClick={() => login('worker')} className="btn" style={{ padding: '16px', borderRadius: 'var(--r-lg)', justifyContent: 'flex-start', background: 'var(--bg-subtle)', border: '1px solid var(--border)', textAlign: 'left', width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 'var(--r-md)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--amber-500)' }}><Icons.Worker /></div>
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Agricultural Worker</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>I am looking for farm work</div>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <>
       <Navbar />
@@ -12,33 +60,49 @@ export default function Home() {
 
         {/* ── HERO ── */}
         <section className="hero">
-          <div className="container" style={{ position: 'relative', zIndex: 1 }}>
+          <div className="container" style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div className="hero-eyebrow anim-up">
               <span className="hero-eyebrow-dot" />
               Empowering Indian Farmers
             </div>
 
-            <h1 className="hero-title anim-up delay-1">
+            <h1 className="hero-title anim-up delay-1" style={{ textAlign: 'center' }}>
               Find the Right<br />
               <span>Farm Resources</span><br />
               Near You
             </h1>
 
-            <p className="hero-subtitle anim-up delay-2">
+            <p className="hero-subtitle anim-up delay-2" style={{ textAlign: 'center', margin: '0 auto 40px' }}>
               Discover equipment, skilled workers, and government schemes available in your area.
             </p>
 
-            <div className="hero-search anim-up delay-3">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const q = document.getElementById('hero-search-input').value.toLowerCase();
+              if (!q.trim()) {
+                window.location.href = '/discover';
+                return;
+              }
+              if (q.includes('scheme') || q.includes('policy') || q.includes('loan') || q.includes('subsidy')) {
+                window.location.href = '/policy-matcher';
+              } else if (q.includes('tractor') || q.includes('harvester') || q.includes('tiller') || q.includes('pump') || q.includes('rotavator') || q.includes('equipment') || q.includes('machine')) {
+                window.location.href = '/discover?type=equipment&q=' + encodeURIComponent(q);
+              } else if (q.includes('worker') || q.includes('labor') || q.includes('harvesting') || q.includes('plant') || q.includes('weed') || q.includes('spray')) {
+                window.location.href = '/discover?type=workers&q=' + encodeURIComponent(q);
+              } else {
+                window.location.href = '/discover?type=equipment&q=' + encodeURIComponent(q);
+              }
+            }} className="hero-search anim-up delay-3" style={{ margin: '0 auto' }}>
               <input
                 id="hero-search-input"
                 type="text"
                 className="hero-search-input"
                 placeholder="Equipment, workers, or schemes..."
               />
-              <Link href="/discover" className="hero-search-btn">
+              <button type="submit" className="hero-search-btn" style={{ border: 'none', cursor: 'pointer' }}>
                 Search
-              </Link>
-            </div>
+              </button>
+            </form>
           </div>
         </section>
 

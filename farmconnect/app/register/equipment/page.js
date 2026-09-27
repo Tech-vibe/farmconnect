@@ -4,12 +4,14 @@ import Navbar from '../../components/Navbar';
 import BottomNav from '../../components/BottomNav';
 import { Icons } from '../../components/Icons';
 import ImageUploader from '../../components/ImageUploader';
+import CustomSelect from '../../components/CustomSelect';
+import CustomDatePicker from '../../components/CustomDatePicker';
 
 const EQUIPMENT_TYPES = ['Tractor', 'Paddy Harvester', 'Mini Tiller', 'Rotavator', 'Water Pump', 'Sprayer', 'Thresher', 'Plough', 'Seed Drill', 'Other'];
 const STATES = ['Kerala', 'Tamil Nadu', 'Karnataka', 'Andhra Pradesh', 'Telangana', 'Maharashtra', 'Punjab', 'Haryana', 'Uttar Pradesh', 'Bihar', 'Other'];
 
 export default function ListEquipmentPage() {
-  const [form, setForm] = useState({ name: '', type: '', rent_per_day: '', location: '', state: '', contact: '', availability: '', description: '' });
+  const [form, setForm] = useState({ name: '', type: '', rent_per_day: '', location: '', state: '', contact: '', available_from: '', available_to: '', description: '' });
   const [photos, setPhotos] = useState([]);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -32,11 +34,31 @@ export default function ListEquipmentPage() {
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setLoading(true);
-    // TODO: replace with real API →  POST /api/equipment  (include photos as base64 or upload to storage first)
-    await new Promise(r => setTimeout(r, 1100));
-    setLoading(false);
-    setSubmitted(true);
-    // photos are already in state — pass to API as needed
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/equipment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          type: form.type,
+          purpose: form.description || 'General Farming',
+          rent_per_day: parseFloat(form.rent_per_day),
+          location: form.location,
+          contact: form.contact,
+          vendor_name: form.name,
+          image_url: photos.length > 0 ? photos[0].url : null,
+          available: true
+        })
+      });
+      if (!response.ok) throw new Error('Failed to save to database');
+      setSubmitted(true);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to connect to the backend database.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -65,6 +87,7 @@ export default function ListEquipmentPage() {
                   ['Rent/Day', `₹${form.rent_per_day}`],
                   ['Location', form.location],
                   ['Contact',  form.contact],
+                  ['Available', form.available_from && form.available_to ? `${form.available_from} → ${form.available_to}` : 'Anytime']
                 ].map(([k, v]) => (
                   <div key={k} className="success-summary-row">
                     <span className="success-summary-key">{k}</span>
@@ -72,7 +95,7 @@ export default function ListEquipmentPage() {
                   </div>
                 ))}
               </div>
-              <button id="list-another-equipment" className="btn btn-primary btn-full" onClick={() => { setForm({ name: '', type: '', rent_per_day: '', location: '', state: '', contact: '', availability: '', description: '' }); setPhotos([]); setSubmitted(false); }}>
+              <button id="list-another-equipment" className="btn btn-primary btn-full" onClick={() => { setForm({ name: '', type: '', rent_per_day: '', location: '', state: '', contact: '', available_from: '', available_to: '', description: '' }); setPhotos([]); setSubmitted(false); }}>
                 List Another
               </button>
             </div>
@@ -107,10 +130,13 @@ export default function ListEquipmentPage() {
 
               <div className="form-group">
                 <label className="form-label" htmlFor="equipment-type"><Icons.Tractor /> Equipment Type *</label>
-                <select id="equipment-type" className="form-select" value={form.type} onChange={e => set('type', e.target.value)}>
-                  <option value="">Select type...</option>
-                  {EQUIPMENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
+                <CustomSelect 
+                  id="equipment-type"
+                  options={EQUIPMENT_TYPES} 
+                  value={form.type} 
+                  onChange={val => set('type', val)} 
+                  placeholder="Select type..."
+                />
                 {errors.type && <div className="form-error">{errors.type}</div>}
               </div>
 
@@ -142,10 +168,13 @@ export default function ListEquipmentPage() {
 
               <div className="form-group">
                 <label className="form-label" htmlFor="equipment-state">State</label>
-                <select id="equipment-state" className="form-select" value={form.state} onChange={e => set('state', e.target.value)}>
-                  <option value="">Select state...</option>
-                  {STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <CustomSelect 
+                  id="equipment-state"
+                  options={STATES} 
+                  value={form.state} 
+                  onChange={val => set('state', val)} 
+                  placeholder="Select state..."
+                />
               </div>
             </div>
 
@@ -160,8 +189,28 @@ export default function ListEquipmentPage() {
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="equipment-availability"><Icons.Calendar /> Availability</label>
-                <input id="equipment-availability" className="form-input" type="text" placeholder="e.g. Mon–Sat, Anytime" value={form.availability} onChange={e => set('availability', e.target.value)} />
+                <label className="form-label"><Icons.Calendar /> Availability Dates</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-faint)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '5px' }}>From</div>
+                    <CustomDatePicker 
+                      value={form.available_from} 
+                      onChange={val => set('available_from', val)} 
+                      placeholder="Start date" 
+                    />
+                    {errors.available_from && <div className="form-error">{errors.available_from}</div>}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-faint)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '5px' }}>To</div>
+                    <CustomDatePicker 
+                      value={form.available_to} 
+                      onChange={val => set('available_to', val)} 
+                      min={form.available_from}
+                      placeholder="End date" 
+                    />
+                    {errors.available_to && <div className="form-error">{errors.available_to}</div>}
+                  </div>
+                </div>
               </div>
 
               <div className="form-group">
