@@ -26,6 +26,19 @@ export default function RootLayout({ children }) {
           <AnimatedBlob />
           {children}
         </RoleProvider>
+
+        <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async></script>
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            function googleTranslateElementInit() {
+              new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'hi,ml,ta,te,kn,mr,gu,bn,en',
+                autoDisplay: false
+              }, 'google_translate_element');
+            }
+          `
+        }}></script>
       </body>
     </html>
   );

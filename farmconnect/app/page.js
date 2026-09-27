@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import Link from 'next/link';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
@@ -7,47 +8,121 @@ import { useRole } from './components/RoleContext';
 
 export default function Home() {
   const { role, login } = useRole();
+  const [authStep, setAuthStep] = useState(1);
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [formData, setFormData] = useState({ name: '', phone: '' });
+
+  const handleRoleSelect = (r) => {
+    setSelectedRole(r);
+    setAuthStep(2);
+  };
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    login({ 
+      role: selectedRole, 
+      name: formData.name || 'Guest User', 
+      phone: formData.phone || 'Not provided' 
+    });
+  };
 
   if (!role) {
     return (
       <main className="page-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px' }}>
         <div className="form-section anim-scale" style={{ width: '100%', maxWidth: '400px', margin: '0' }}>
-          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-            <h1 className="hero-title" style={{ fontSize: '1.8rem', marginBottom: '8px' }}>FarmConnect</h1>
-            <p className="hero-subtitle" style={{ margin: 0, fontSize: '0.9rem' }}>Select your role to enter</p>
-          </div>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <button onClick={() => login('farmer')} className="btn" style={{ padding: '16px', borderRadius: 'var(--r-lg)', justifyContent: 'flex-start', background: 'var(--bg-subtle)', border: '1px solid var(--border)', textAlign: 'left', width: '100%' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ width: 40, height: 40, borderRadius: 'var(--r-md)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--green-500)' }}><Icons.Leaf /></div>
-                <div>
-                  <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Farmer</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>Looking for equipment or workers</div>
-                </div>
+          {authStep === 1 ? (
+            <>
+              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                <h1 className="hero-title" style={{ fontSize: '1.8rem', marginBottom: '8px' }}>FarmConnect</h1>
+                <p className="hero-subtitle" style={{ margin: 0, fontSize: '0.9rem' }}>Select your role to enter</p>
               </div>
-            </button>
-            
-            <button onClick={() => login('vendor')} className="btn" style={{ padding: '16px', borderRadius: 'var(--r-lg)', justifyContent: 'flex-start', background: 'var(--bg-subtle)', border: '1px solid var(--border)', textAlign: 'left', width: '100%' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ width: 40, height: 40, borderRadius: 'var(--r-md)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--green-500)' }}><Icons.Tractor /></div>
-                <div>
-                  <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Equipment Vendor</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>I want to rent out my machines</div>
-                </div>
-              </div>
-            </button>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <button onClick={() => handleRoleSelect('farmer')} className="btn" style={{ padding: '16px', borderRadius: 'var(--r-lg)', justifyContent: 'flex-start', background: 'var(--bg-subtle)', border: '1px solid var(--border)', textAlign: 'left', width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 'var(--r-md)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--green-500)' }}><Icons.Leaf /></div>
+                    <div>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Farmer</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>Looking for equipment or workers</div>
+                    </div>
+                  </div>
+                </button>
+                
+                <button onClick={() => handleRoleSelect('vendor')} className="btn" style={{ padding: '16px', borderRadius: 'var(--r-lg)', justifyContent: 'flex-start', background: 'var(--bg-subtle)', border: '1px solid var(--border)', textAlign: 'left', width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 'var(--r-md)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--green-500)' }}><Icons.Tractor /></div>
+                    <div>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Equipment Vendor</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>I want to rent out my machines</div>
+                    </div>
+                  </div>
+                </button>
 
-            <button onClick={() => login('worker')} className="btn" style={{ padding: '16px', borderRadius: 'var(--r-lg)', justifyContent: 'flex-start', background: 'var(--bg-subtle)', border: '1px solid var(--border)', textAlign: 'left', width: '100%' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ width: 40, height: 40, borderRadius: 'var(--r-md)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--amber-500)' }}><Icons.Worker /></div>
-                <div>
-                  <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Agricultural Worker</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>I am looking for farm work</div>
-                </div>
+                <button onClick={() => handleRoleSelect('worker')} className="btn" style={{ padding: '16px', borderRadius: 'var(--r-lg)', justifyContent: 'flex-start', background: 'var(--bg-subtle)', border: '1px solid var(--border)', textAlign: 'left', width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 'var(--r-md)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--amber-500)' }}><Icons.Worker /></div>
+                    <div>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Agricultural Worker</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>I am looking for farm work</div>
+                    </div>
+                  </div>
+                </button>
               </div>
-            </button>
-          </div>
+
+              <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '12px' }}>New to FarmConnect?</p>
+                <button onClick={() => setAuthStep(1)} className="btn btn-outline btn-full" style={{ padding: '12px', borderRadius: 'var(--r-lg)', fontSize: '0.9rem' }}>
+                  Create Account
+                </button>
+              </div>
+            </>
+          ) : (
+            <form onSubmit={handleLogin} className="anim-up">
+              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setAuthStep(1)} 
+                  style={{ background: 'none', border: 'none', color: 'var(--green-500)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', marginBottom: '16px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <Icons.ChevronRight style={{ width: 14, height: 14, transform: 'rotate(180deg)' }} /> Back
+                </button>
+                <h1 className="hero-title" style={{ fontSize: '1.5rem', marginBottom: '8px' }}>
+                  Create {selectedRole === 'vendor' ? 'Vendor' : selectedRole === 'worker' ? 'Worker' : 'Farmer'} Account
+                </h1>
+                <p className="hero-subtitle" style={{ margin: 0, fontSize: '0.9rem' }}>Enter your details to proceed</p>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Full Name</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder="e.g. Rajan Kumar" 
+                  value={formData.name} 
+                  onChange={e => setFormData({...formData, name: e.target.value})} 
+                  required 
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '24px' }}>
+                <label className="form-label">Phone Number</label>
+                <input 
+                  type="tel" 
+                  className="form-input" 
+                  placeholder="e.g. +91 9876543210" 
+                  value={formData.phone} 
+                  onChange={e => setFormData({...formData, phone: e.target.value})} 
+                  required 
+                />
+              </div>
+
+              <button type="submit" className="btn btn-primary btn-full" style={{ padding: '16px', borderRadius: 'var(--r-lg)', fontSize: '1rem' }}>
+                Enter FarmConnect
+              </button>
+            </form>
+          )}
+          
         </div>
       </main>
     );
@@ -115,7 +190,7 @@ export default function Home() {
               { value: '50+',    label: 'Schemes' },
             ].map((s) => (
               <div key={s.label} className="stat-item anim-up">
-                <div className="stat-value">{s.value}</div>
+                <div className="stat-value notranslate">{s.value}</div>
                 <div className="stat-label">{s.label}</div>
               </div>
             ))}
@@ -201,7 +276,7 @@ export default function Home() {
                 { n: '03', title: 'Call directly',          desc: 'One tap to call. No middlemen, no delays.' },
               ].map((s, i) => (
                 <div key={s.n} className={`step-item anim-up delay-${i + 1}`}>
-                  <div className="step-num">{s.n}</div>
+                  <div className="step-num notranslate">{s.n}</div>
                   <div>
                     <div className="step-title">{s.title}</div>
                     <div className="step-desc">{s.desc}</div>
